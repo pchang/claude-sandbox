@@ -118,6 +118,10 @@ local state = {
 	rank = "Bronze",
 }
 
+-- Forward declaration so the inventory event handler (registered below) can call
+-- this function even though it's fully defined later in the file.
+local setRankDisplay
+
 local function refreshHUD()
 	wheelsLabel.Text = string.format(
 		"Wheels: %d   Attached: %d/%d",
@@ -417,7 +421,7 @@ rankLabel.Text = "Rank: Bronze  ·  0 wheels attached"
 rankLabel.ZIndex = 102
 rankLabel.Parent = rankRow
 
-local function setRankDisplay(rank: string, lifetimeWheels: number)
+setRankDisplay = function(rank: string, lifetimeWheels: number)
 	bronzeIcon.Visible   = (rank == "Bronze")
 	silverIcon.Visible   = (rank == "Silver")
 	goldIcon.Visible     = (rank == "Gold")
