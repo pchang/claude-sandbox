@@ -3,70 +3,434 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hello World</title>
+  <title>Tire Shop</title>
   <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
+      font-family: sans-serif;
+      background: #1a1a2e;
+      color: #fff;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      font-family: sans-serif;
-      background: #f5f5f5;
+      padding: 20px;
     }
 
-    button {
+    h1 { font-size: 1.4rem; margin-bottom: 4px; letter-spacing: 1px; }
+
+    /* HUD */
+    #hud {
+      display: flex;
+      gap: 32px;
+      align-items: center;
+      margin-bottom: 20px;
+      background: #16213e;
       padding: 12px 28px;
+      border-radius: 12px;
+      border: 1px solid #0f3460;
+    }
+
+    .hud-stat { text-align: center; }
+    .hud-stat .label { font-size: 0.7rem; text-transform: uppercase; color: #888; }
+    .hud-stat .value { font-size: 1.3rem; font-weight: bold; }
+
+    #rank-badge {
       font-size: 1rem;
-      cursor: pointer;
+      font-weight: bold;
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 2px solid;
+    }
+    .rank-bronze  { color: #cd7f32; border-color: #cd7f32; background: #2a1a0a; }
+    .rank-silver  { color: #c0c0c0; border-color: #c0c0c0; background: #1a1a1a; }
+    .rank-gold    { color: #ffd700; border-color: #ffd700; background: #2a2200; }
+    .rank-platinum{ color: #e5e4e2; border-color: #b0c4de; background: #0a1020; text-shadow: 0 0 8px #b0c4de; }
+
+    /* Progress bar toward next rank */
+    #rank-progress-wrap {
+      width: 260px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    #rank-progress-label { font-size: 0.75rem; color: #aaa; margin-bottom: 4px; }
+    #rank-progress-bar-bg {
+      background: #16213e;
+      border-radius: 8px;
+      height: 10px;
+      overflow: hidden;
+      border: 1px solid #0f3460;
+    }
+    #rank-progress-bar {
+      height: 100%;
+      border-radius: 8px;
+      transition: width 0.4s ease;
+      background: #cd7f32;
+    }
+
+    /* Game area */
+    #game-area {
+      position: relative;
+      width: 340px;
+      height: 260px;
+      background: #16213e;
+      border-radius: 16px;
+      border: 2px solid #0f3460;
+      margin-bottom: 24px;
+    }
+
+    /* Car body */
+    #car {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 160px;
+      height: 80px;
+    }
+    #car-body {
+      position: absolute;
+      left: 20px; top: 10px;
+      width: 120px; height: 50px;
+      background: #e94560;
+      border-radius: 12px 12px 4px 4px;
+    }
+    #car-body::before {
+      content: '';
+      position: absolute;
+      left: 15px; top: -22px;
+      width: 90px; height: 28px;
+      background: #c73652;
+      border-radius: 10px 10px 0 0;
+    }
+    #car-chassis {
+      position: absolute;
+      left: 0; top: 40px;
+      width: 160px; height: 28px;
+      background: #b02d45;
+      border-radius: 4px;
+    }
+
+    /* Wheel slots */
+    .slot {
+      position: absolute;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 3px dashed #555;
+      background: #0d1b2a;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.6rem; color: #555;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .slot.drag-over { border-color: #4ade80; background: #052e16; }
+    .slot.filled    { border-style: solid; border-color: #1e1e1e; background: transparent; }
+
+    #slot-fl { left: 4px;  top: 44px; }
+    #slot-fr { right: 4px; top: 44px; }
+    #slot-rl { left: 4px;  top: 82px; }
+    #slot-rr { right: 4px; top: 82px; }
+
+    /* Wheel in slot */
+    .wheel-in-slot {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #555, #111);
+      border: 3px solid #333;
+      position: relative;
+    }
+    .wheel-in-slot::after {
+      content: '';
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: #888;
+      border: 2px solid #444;
+    }
+
+    /* Success flash */
+    #success-msg {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: rgba(74,222,128,0.15);
+      border-radius: 14px;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #4ade80;
+      flex-direction: column;
+      gap: 6px;
+    }
+    #success-msg.show { display: flex; }
+
+    /* Tire tray */
+    #tray {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 24px;
+      background: #16213e;
+      padding: 16px 24px;
+      border-radius: 12px;
+      border: 1px solid #0f3460;
+    }
+
+    .tire {
+      width: 52px; height: 52px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #555, #111);
+      border: 4px solid #333;
+      cursor: grab;
+      position: relative;
+      transition: transform 0.15s, opacity 0.2s;
+      touch-action: none;
+    }
+    .tire:active { cursor: grabbing; transform: scale(1.1); }
+    .tire::after {
+      content: '';
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: #888;
+      border: 3px solid #444;
+    }
+    .tire.used { opacity: 0.2; pointer-events: none; }
+
+    /* Reset button */
+    #reset-btn {
+      padding: 10px 28px;
+      background: #0f3460;
+      color: #fff;
       border: none;
-      border-radius: 6px;
-      background: #4f46e5;
-      color: white;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      cursor: pointer;
       transition: background 0.2s;
     }
+    #reset-btn:hover { background: #1a5a9a; }
 
-    button:hover {
-      background: #4338ca;
+    /* Rank-up toast */
+    #toast {
+      position: fixed;
+      top: 20px; left: 50%;
+      transform: translateX(-50%) translateY(-80px);
+      background: #ffd700;
+      color: #000;
+      padding: 10px 24px;
+      border-radius: 24px;
+      font-weight: bold;
+      font-size: 1rem;
+      transition: transform 0.4s ease;
+      z-index: 99;
+      pointer-events: none;
     }
-
-    button:disabled {
-      background: #a5b4fc;
-      cursor: default;
-    }
-
-    #output {
-      margin-top: 24px;
-      font-size: 1.5rem;
-      letter-spacing: 0.05em;
-      min-height: 2rem;
-    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
   </style>
 </head>
 <body>
-  <button id="btn" onclick="typeHelloWorld()">Click me</button>
-  <div id="output"></div>
 
-  <script>
-    function typeHelloWorld() {
-      const btn = document.getElementById('btn');
-      const output = document.getElementById('output');
-      const text = 'hello world';
+<h1>Tire Shop</h1>
 
-      btn.disabled = true;
-      output.textContent = '';
+<div id="hud">
+  <div class="hud-stat">
+    <div class="label">Total Tires</div>
+    <div class="value" id="total-tires">0</div>
+  </div>
+  <div class="hud-stat">
+    <div class="label">Games</div>
+    <div class="value" id="games-played">0</div>
+  </div>
+  <div id="rank-badge" class="rank-bronze">Bronze</div>
+</div>
 
-      let i = 0;
-      const interval = setInterval(() => {
-        output.textContent += text[i];
-        i++;
-        if (i === text.length) {
-          clearInterval(interval);
-          btn.disabled = false;
-        }
-      }, 100);
+<div id="rank-progress-wrap">
+  <div id="rank-progress-label">0 / 20 tires to Silver</div>
+  <div id="rank-progress-bar-bg">
+    <div id="rank-progress-bar" style="width:0%"></div>
+  </div>
+</div>
+
+<div id="game-area">
+  <div id="car">
+    <div id="car-body"></div>
+    <div id="car-chassis"></div>
+    <div class="slot" id="slot-fl" data-slot="fl">FL</div>
+    <div class="slot" id="slot-fr" data-slot="fr">FR</div>
+    <div class="slot" id="slot-rl" data-slot="rl">RL</div>
+    <div class="slot" id="slot-rr" data-slot="rr">RR</div>
+  </div>
+  <div id="success-msg">
+    <span>All 4 Tires On!</span>
+    <span style="font-size:0.9rem;color:#a7f3d0">Next round starting…</span>
+  </div>
+</div>
+
+<div id="tray">
+  <div class="tire" id="tire-0" draggable="true"></div>
+  <div class="tire" id="tire-1" draggable="true"></div>
+  <div class="tire" id="tire-2" draggable="true"></div>
+  <div class="tire" id="tire-3" draggable="true"></div>
+</div>
+
+<button id="reset-btn" onclick="resetStats()">Reset Stats</button>
+
+<div id="toast"></div>
+
+<script>
+  const RANKS = [
+    { name: 'Bronze',   cls: 'rank-bronze',   min: 0,   max: 19,  color: '#cd7f32' },
+    { name: 'Silver',   cls: 'rank-silver',   min: 20,  max: 59,  color: '#c0c0c0' },
+    { name: 'Gold',     cls: 'rank-gold',     min: 60,  max: 119, color: '#ffd700' },
+    { name: 'Platinum', cls: 'rank-platinum', min: 120, max: Infinity, color: '#b0c4de' },
+  ];
+
+  let totalTires  = parseInt(localStorage.getItem('totalTires')  || '0');
+  let gamesPlayed = parseInt(localStorage.getItem('gamesPlayed') || '0');
+  let filledSlots = new Set();
+  let activeTireId = null;
+
+  function getRank(tires) {
+    return RANKS.find(r => tires >= r.min && tires <= r.max);
+  }
+
+  function save() {
+    localStorage.setItem('totalTires', totalTires);
+    localStorage.setItem('gamesPlayed', gamesPlayed);
+  }
+
+  function updateHUD(prevRank) {
+    document.getElementById('total-tires').textContent = totalTires;
+    document.getElementById('games-played').textContent = gamesPlayed;
+
+    const rank = getRank(totalTires);
+    const badge = document.getElementById('rank-badge');
+    badge.textContent = rank.name;
+    badge.className = 'rank-' + rank.name.toLowerCase();
+
+    // Progress bar
+    const progressBar = document.getElementById('rank-progress-bar');
+    const progressLabel = document.getElementById('rank-progress-label');
+    const nextRank = RANKS[RANKS.indexOf(rank) + 1];
+    if (nextRank) {
+      const span = nextRank.min - rank.min;
+      const done = totalTires - rank.min;
+      const pct = Math.min(100, Math.round((done / span) * 100));
+      progressBar.style.width = pct + '%';
+      progressBar.style.background = rank.color;
+      progressLabel.textContent = `${done} / ${span} tires to ${nextRank.name}`;
+    } else {
+      progressBar.style.width = '100%';
+      progressBar.style.background = rank.color;
+      progressLabel.textContent = 'Max rank reached!';
     }
-  </script>
+
+    // Rank-up toast
+    if (prevRank && prevRank.name !== rank.name) {
+      showToast('Rank up! ' + rank.name + ' 🎉');
+    }
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2800);
+  }
+
+  function resetRound() {
+    filledSlots.clear();
+    document.querySelectorAll('.slot').forEach(s => {
+      s.classList.remove('filled', 'drag-over');
+      s.innerHTML = s.dataset.slot.toUpperCase();
+    });
+    document.querySelectorAll('.tire').forEach(t => t.classList.remove('used'));
+    document.getElementById('success-msg').classList.remove('show');
+  }
+
+  function onRoundComplete() {
+    const prevRank = getRank(totalTires);
+    totalTires  += 4;
+    gamesPlayed += 1;
+    save();
+    updateHUD(prevRank);
+
+    document.getElementById('success-msg').classList.add('show');
+    setTimeout(resetRound, 1800);
+  }
+
+  function resetStats() {
+    if (!confirm('Reset all stats and ranks? This cannot be undone.')) return;
+    totalTires = 0; gamesPlayed = 0;
+    save();
+    updateHUD(null);
+    resetRound();
+  }
+
+  // ── Drag & drop (desktop) ──────────────────────────────────────────
+  document.querySelectorAll('.tire').forEach(tire => {
+    tire.addEventListener('dragstart', e => {
+      if (tire.classList.contains('used')) { e.preventDefault(); return; }
+      activeTireId = tire.id;
+      e.dataTransfer.effectAllowed = 'move';
+    });
+  });
+
+  document.querySelectorAll('.slot').forEach(slot => {
+    slot.addEventListener('dragover', e => {
+      if (!slot.classList.contains('filled')) {
+        e.preventDefault();
+        slot.classList.add('drag-over');
+      }
+    });
+    slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+    slot.addEventListener('drop', e => {
+      e.preventDefault();
+      slot.classList.remove('drag-over');
+      if (slot.classList.contains('filled') || !activeTireId) return;
+      attachTire(slot, activeTireId);
+      activeTireId = null;
+    });
+  });
+
+  // ── Touch drag (mobile) ────────────────────────────────────────────
+  document.querySelectorAll('.tire').forEach(tire => {
+    tire.addEventListener('touchstart', e => {
+      if (tire.classList.contains('used')) return;
+      activeTireId = tire.id;
+    }, { passive: true });
+
+    tire.addEventListener('touchend', e => {
+      if (!activeTireId) return;
+      const touch = e.changedTouches[0];
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      const slot = el && el.closest('.slot');
+      if (slot && !slot.classList.contains('filled')) {
+        attachTire(slot, activeTireId);
+      }
+      activeTireId = null;
+    });
+  });
+
+  function attachTire(slot, tireId) {
+    slot.classList.add('filled');
+    slot.innerHTML = '';
+    const wheel = document.createElement('div');
+    wheel.className = 'wheel-in-slot';
+    slot.appendChild(wheel);
+
+    document.getElementById(tireId).classList.add('used');
+    filledSlots.add(slot.dataset.slot);
+
+    if (filledSlots.size === 4) onRoundComplete();
+  }
+
+  // Init
+  updateHUD(null);
+</script>
 </body>
 </html>
