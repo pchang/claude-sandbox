@@ -24,7 +24,6 @@ local playerReadyRemote      = Remotes.wait(Remotes.Names.PlayerReady)
 local shopOpenRemote         = Remotes.wait(Remotes.Names.ShopOpen)
 local shopBuyRemote          = Remotes.wait(Remotes.Names.ShopBuy)
 local shopBuyResultRemote    = Remotes.wait(Remotes.Names.ShopBuyResult)
-local gunFireResultRemote    = Remotes.wait(Remotes.Names.GunFireResult)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -762,9 +761,8 @@ closeCorner.Parent = shopClose
 
 -- Item card factory
 local SHOP_ITEMS = {
-	{ key = "Boots",      label = "Running Boots", desc = "Move faster.",                              cost = GameConfig.BootsCost },
-	{ key = "PowerJuice", label = "Power Juice",   desc = "Survive one monster catch.",                cost = GameConfig.PowerJuiceCost },
-	{ key = "Gun",        label = "Glock",         desc = "Stuns the monster (45s · 2min cooldown).",  cost = GameConfig.GunCost },
+	{ key = "Boots",      label = "Running Boots", desc = "Move faster.",           cost = GameConfig.BootsCost },
+	{ key = "PowerJuice", label = "Power Juice",   desc = "Survive one monster catch.", cost = GameConfig.PowerJuiceCost },
 }
 local itemButtons: { [string]: TextButton } = {}
 
@@ -891,19 +889,6 @@ end)
 gameStateRemote.OnClientEvent:Connect(function(s)
 	if s == "lost" or s == "won" or s == "restart" then
 		setShopVisible(false)
-	end
-end)
-
--- ========== Gun fire feedback ==========
-
-gunFireResultRemote.OnClientEvent:Connect(function(result)
-	if not result then return end
-	if result.ok then
-		showPopup(string.format("%s stunned the monster (%ds)", result.shooterName or "Someone", result.stunSeconds or 45))
-	else
-		if result.reason == "cooldown" and result.remaining then
-			showPopup(string.format("Gun on cooldown — %ds left", math.ceil(result.remaining)))
-		end
 	end
 end)
 
